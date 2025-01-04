@@ -31,7 +31,7 @@
 </head>
 <body>
     <h1>PDF.js Example</h1>
-    <p>Version: 31</p>
+    <p id="version-display"></p>
     <div id="controls">
         <input type="file" id="file-input" accept="application/pdf"/>
         <button id="download-csv">Download CSV</button>
@@ -53,6 +53,9 @@
         <pre id="raw-csv-output"></pre>
     </div>
     <script>
+        var version = "31";
+        document.getElementById('version-display').textContent = "Version: " + version;
+
         document.getElementById('file-input').addEventListener('change', function(event) {
             var file = event.target.files[0];
             if (file.type !== 'application/pdf') {
@@ -156,7 +159,6 @@
             var url = URL.createObjectURL(blob);
             var now = new Date();
             var isoDate = now.toISOString();
-            var version = "31";
             var filename = `output_v${version}_${isoDate}.csv`;
             link.setAttribute("href", url);
             link.setAttribute("download", filename);
