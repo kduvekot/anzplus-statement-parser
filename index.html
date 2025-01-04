@@ -18,6 +18,15 @@
             align-items: center;
             margin-bottom: 10px;
         }
+        #debug-section {
+            display: none;
+            margin-top: 20px;
+        }
+        #debug-link {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -28,6 +37,21 @@
         <button id="download-csv">Download CSV</button>
     </div>
     <canvas id="pdf-canvas"></canvas>
+    <p id="debug-link">Show Debug Information</p>
+    <div id="debug-section">
+        <h2>Top 10 X Coordinates</h2>
+        <table id="coordinates-table" border="1">
+            <thead>
+                <tr>
+                    <th>X Coordinate</th>
+                    <th>Occurrences</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <h2>Raw CSV Output</h2>
+        <pre id="raw-csv-output"></pre>
+    </div>
     <script>
         document.getElementById('file-input').addEventListener('change', function(event) {
             var file = event.target.files[0];
@@ -99,11 +123,23 @@
                         document.getElementById('download-csv').onclick = function() {
                             downloadCSV(csvContent);
                         };
+
+                        // Display debug information
+                        displayDebugInformation(finalText, csvContent);
                     });
                 });
             };
 
             fileReader.readAsArrayBuffer(file);
+        });
+
+        document.getElementById('debug-link').addEventListener('click', function() {
+            var debugSection = document.getElementById('debug-section');
+            if (debugSection.style.display === 'none') {
+                debugSection.style.display = 'block';
+            } else {
+                debugSection.style.display = 'none';
+            }
         });
 
         function convertToCSV(textItems) {
@@ -128,6 +164,31 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        function displayDebugInformation(textItems, csvContent) {
+            // Calculate top 10 X coordinates
+            var xCounts = {};
+            textItems.forEach(item => {
+                if (!xCounts[item.x]) {
+                    xCounts[item.x] = 0;
+                }
+                xCounts[item.x]++;
+            });
+
+            var sortedX = Object.keys(xCounts).sort((a, b) => xCounts[b] - xCounts[a]).slice(0, 10);
+            var coordinatesTable = document.getElementById('coordinates-table').getElementsByTagName('tbody')[0];
+            coordinatesTable.innerHTML = '';
+            sortedX.forEach(x => {
+                var row = coordinatesTable.insertRow();
+                var cellX = row.insertCell(0);
+                var cellCount = row.insertCell(1);
+                cellX.textContent = x;
+                cellCount.textContent = xCounts[x];
+            });
+
+            // Display raw CSV output
+            document.getElementById('raw-csv-output').textContent = csvContent;
         }
     </script>
 </body>
