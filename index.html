@@ -32,39 +32,55 @@
 
                 // Load PDF
                 pdfjsLib.getDocument({data: typedarray}).promise.then(function(pdf) {
-                    // Get the first page
-                    pdf.getPage(1).then(function(page) {
-                        var scale = 1.5;
-                        var viewport = page.getViewport({ scale: scale });
+                    var numPages = pdf.numPages;
+                    var finalText = "";
 
-                        // Prepare canvas using PDF page dimensions
-                        var canvas = document.getElementById('pdf-canvas');
-                        var context = canvas.getContext('2d');
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
+                    // Function to get text from each page
+                    function getPageText(pageNum) {
+                        return pdf.getPage(pageNum).then(function(page) {
+                            var scale = 1.5;
+                            var viewport = page.getViewport({ scale: scale });
 
-                        // Render PDF page into canvas context
-                        var renderContext = {
-                            canvasContext: context,
-                            viewport: viewport
-                        };
-                        page.render(renderContext);
+                            // Prepare canvas using PDF page dimensions
+                            var canvas = document.getElementById('pdf-canvas');
+                            var context = canvas.getContext('2d');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
 
-                        // Extract text from the page
-                        page.getTextContent().then(function(textContent) {
-                            var textItems = textContent.items;
-                            var finalText = "";
-                            for (var i = 0; i < textItems.length; i++) {
-                                var item = textItems[i];
-                                finalText += item.str + " ";
-                            }
-
-                            // Convert the text to CSV format
-                            var csvContent = convertToCSV(finalText);
-                            document.getElementById('download-csv').onclick = function() {
-                                downloadCSV(csvContent);
+                            // Render PDF page into canvas context
+                            var renderContext = {
+                                canvasContext: context,
+                                viewport: viewport
                             };
+                            page.render(renderContext);
+
+                            // Extract text from the page
+                            return page.getTextContent().then(function(textContent) {
+                                var textItems = textContent.items;
+                                var pageText = "";
+                                for (var i = 0; i < textItems.length; i++) {
+                                    var item = textItems[i];
+                                    pageText += item.str + " ";
+                                }
+                                return pageText;
+                            });
                         });
+                    }
+
+                    // Loop through all pages and extract text
+                    var promises = [];
+                    for (var i = 1; i <= numPages; i++) {
+                        promises.push(getPageText(i));
+                    }
+
+                    Promise.all(promises).then(function(pagesText) {
+                        finalText = pagesText.join("\n");
+
+                        // Convert the text to CSV format
+                        var csvContent = convertToCSV(finalText);
+                        document.getElementById('download-csv').onclick = function() {
+                            downloadCSV(csvContent);
+                        };
                     });
                 });
             };
