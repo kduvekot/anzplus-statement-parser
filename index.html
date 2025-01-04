@@ -17,6 +17,7 @@
     <h1>PDF.js Example</h1>
     <input type="file" id="file-input" accept="application/pdf"/>
     <canvas id="pdf-canvas"></canvas>
+    <button id="download-csv">Download CSV</button>
     <script>
         document.getElementById('file-input').addEventListener('change', function(event) {
             var file = event.target.files[0];
@@ -48,12 +49,52 @@
                             viewport: viewport
                         };
                         page.render(renderContext);
+
+                        // Extract text from the page
+                        page.getTextContent().then(function(textContent) {
+                            var textItems = textContent.items;
+                            var finalText = "";
+                            for (var i = 0; i < textItems.length; i++) {
+                                var item = textItems[i];
+                                finalText += item.str + " ";
+                            }
+
+                            // Convert the text to CSV format
+                            var csvContent = convertToCSV(finalText);
+                            document.getElementById('download-csv').onclick = function() {
+                                downloadCSV(csvContent);
+                            };
+                        });
                     });
                 });
             };
 
             fileReader.readAsArrayBuffer(file);
         });
+
+        function convertToCSV(text) {
+            // Dummy implementation: Split text by spaces and join with commas
+            // You need to customize this based on the PDF content structure
+            var rows = text.trim().split("\n");
+            var csv = "Column1,Column2,Column3\n"; // Modify based on actual columns
+            rows.forEach(function(row) {
+                var columns = row.split(" ").join(",");
+                csv += columns + "\n";
+            });
+            return csv;
+        }
+
+        function downloadCSV(csvContent) {
+            var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            var link = document.createElement("a");
+            var url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "output.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     </script>
 </body>
 </html>
