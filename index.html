@@ -51,9 +51,11 @@
         </table>
         <h2>Raw CSV Output</h2>
         <pre id="raw-csv-output"></pre>
+        <h2>Transaction X Coordinate Sequences</h2>
+        <pre id="transaction-sequences-output"></pre>
     </div>
     <script>
-        var version = "34";
+        var version = "35";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -75,6 +77,8 @@
                     var prevX = 0;
                     var prevY = 0;
                     var wordNumber = 1;
+                    var transactionSequences = {};
+                    var currentTransactionSequence = [];
 
                     // Function to get text from each page
                     function getPageText(pageNum) {
@@ -115,6 +119,15 @@
                                     // Determine if it's a new transaction
                                     if ((x < prevX && y < prevY) || index === 0) {
                                         transactionId++;
+                                        if (currentTransactionSequence.length > 0) {
+                                            var uniqueSequence = Array.from(new Set(currentTransactionSequence));
+                                            var sequenceKey = uniqueSequence.join(',');
+                                            if (!transactionSequences[sequenceKey]) {
+                                                transactionSequences[sequenceKey] = 0;
+                                            }
+                                            transactionSequences[sequenceKey]++;
+                                            currentTransactionSequence = [];
+                                        }
                                     }
 
                                     prevX = x;
@@ -125,13 +138,15 @@
                                         return null;
                                     }
 
+                                    currentTransactionSequence.push(roundedX);
+
                                     return {
                                         str: item.str,
                                         x: x,
                                         y: y,
-                                        page: pageNum, // Add page number
-                                        roundedX: roundedX, // Rounded X coordinate
-                                        roundedY: roundedY, // Rounded Y coordinate
+                                        page: pageNum,
+                                        roundedX: roundedX,
+                                        roundedY: roundedY,
                                         transactionId: transactionId,
                                         wordNumber: wordNumber++
                                     };
@@ -149,6 +164,16 @@
                     }
 
                     Promise.all(promises).then(function() {
+                        // Handle the last transaction sequence
+                        if (currentTransactionSequence.length > 0) {
+                            var uniqueSequence = Array.from(new Set(currentTransactionSequence));
+                            var sequenceKey = uniqueSequence.join(',');
+                            if (!transactionSequences[sequenceKey]) {
+                                transactionSequences[sequenceKey] = 0;
+                            }
+                            transactionSequences[sequenceKey]++;
+                        }
+
                         // Convert the final text to CSV format
                         var csvContent = convertToCSV(finalText);
                         document.getElementById('download-csv').onclick = function() {
@@ -156,7 +181,7 @@
                         };
 
                         // Display debug information
-                        displayDebugInformation(finalText, csvContent);
+                        displayDebugInformation(finalText, csvContent, transactionSequences);
                     });
                 });
             };
@@ -197,7 +222,7 @@
             document.body.removeChild(link);
         }
 
-        function displayDebugInformation(textItems, csvContent) {
+        function displayDebugInformation(textItems, csvContent, transactionSequences) {
             // Calculate top 10 rounded X coordinates
             var xCounts = {};
             textItems.forEach(item => {
@@ -221,30 +246,24 @@
             // Display raw CSV output with transaction subheadings
             var rawOutput = "";
             var currentTransaction = -1;
-            var uniqueRoundedXCoords = [];
             textItems.forEach(item => {
                 if (item.transactionId !== currentTransaction) {
                     currentTransaction = item.transactionId;
                     rawOutput += `\nTransaction ${currentTransaction}:\n`;
-                    uniqueRoundedXCoords = [];
                 }
-
-                if (!uniqueRoundedXCoords.includes(item.roundedX)) {
-                    uniqueRoundedXCoords.push(item.roundedX);
-                }
-
                 rawOutput += `${item.page},${item.wordNumber},${item.x},${item.y},"${item.str}",${item.roundedX},${item.roundedY},${item.transactionId}\n`;
             });
 
-            rawOutput += `\nUnique Rounded X Coordinates per Transaction:\n`;
-            textItems.forEach(item => {
-                if (item.transactionId !== currentTransaction) {
-                    currentTransaction = item.transactionId;
-                    rawOutput += `Transaction ${currentTransaction}: ${uniqueRoundedXCoords.join(", ")}\n`;
-                }
+            document.getElementById('raw-csv-output').textContent = rawOutput;
+
+            // Display transaction sequences occurrences
+            var sequenceOutput = "";
+            var sortedSequences = Object.keys(transactionSequences).sort((a, b) => transactionSequences[b] - transactionSequences[a]);
+            sortedSequences.forEach(seq => {
+                sequenceOutput += `${seq}: ${transactionSequences[seq]}\n`;
             });
 
-            document.getElementById('raw-csv-output').textContent = rawOutput;
+            document.getElementById('transaction-sequences-output').textContent = sequenceOutput;
         }
     </script>
 </body>
