@@ -10,6 +10,7 @@
             border: 1px solid black;
             width: 100%;
             height: auto;
+            max-height: 100vh; /* Max height to fit within the viewport height */
         }
     </style>
 </head>
@@ -45,13 +46,16 @@
                             // Prepare canvas using PDF page dimensions
                             var canvas = document.getElementById('pdf-canvas');
                             var context = canvas.getContext('2d');
-                            canvas.height = viewport.height;
-                            canvas.width = viewport.width;
+
+                            // Adjust canvas size to fit within the viewport
+                            var ratio = viewport.width / viewport.height;
+                            canvas.width = window.innerWidth * 0.9; // Adjust width to 90% of window width
+                            canvas.height = canvas.width / ratio;
 
                             // Render PDF page into canvas context
                             var renderContext = {
                                 canvasContext: context,
-                                viewport: viewport
+                                viewport: page.getViewport({ scale: canvas.width / viewport.width })
                             };
                             page.render(renderContext);
 
