@@ -22,7 +22,7 @@
 </head>
 <body>
     <h1>PDF.js Example</h1>
-    <p>Version: Commit df19e1b on 2025-01-04 14:27:43 UTC</p>
+    <p>Version: Commit df19e1b on 2025-01-04 14:36:20 UTC</p>
     <div id="controls">
         <input type="file" id="file-input" accept="application/pdf"/>
         <button id="download-csv">Download CSV</button>
@@ -43,7 +43,7 @@
                 // Load PDF
                 pdfjsLib.getDocument({data: typedarray}).promise.then(function(pdf) {
                     var numPages = pdf.numPages;
-                    var finalText = "";
+                    var finalText = [];
 
                     // Function to get text from each page
                     function getPageText(pageNum) {
@@ -75,12 +75,13 @@
                             // Extract text from the page
                             return page.getTextContent().then(function(textContent) {
                                 var textItems = textContent.items;
-                                var pageText = "";
-                                for (var i = 0; i < textItems.length; i++) {
-                                    var item = textItems[i];
-                                    pageText += item.str + " ";
-                                }
-                                return pageText;
+                                var pageTexts = textItems.map(item => ({
+                                    str: item.str,
+                                    x: item.transform[4],
+                                    y: item.transform[5]
+                                }));
+                                finalText.push(...pageTexts);
+                                return pageTexts;
                             });
                         });
                     }
@@ -91,11 +92,13 @@
                         promises.push(getPageText(i));
                     }
 
-                    Promise.all(promises).then(function(pagesText) {
-                        finalText = pagesText.join("\n");
-
-                        // Convert the text to CSV format
-                        var csvContent = convertToCSV(finalText);
+                    Promise.all(promises).then(function() {
+                        // Group text items based on their y-coordinate (assuming rows)
+                        finalText.sort((a, b) => a.y - b.y);
+                        var groupedText = groupBy(finalText, item => item.y);
+                        
+                        // Convert the grouped text to CSV format
+                        var csvContent = convertToCSV(groupedText);
                         document.getElementById('download-csv').onclick = function() {
                             downloadCSV(csvContent);
                         };
@@ -106,13 +109,21 @@
             fileReader.readAsArrayBuffer(file);
         });
 
-        function convertToCSV(text) {
-            // Custom implementation: Split text by lines and join with commas
-            var rows = text.trim().split("\n");
+        function groupBy(arr, key) {
+            return arr.reduce((acc, item) => {
+                const keyValue = key(item);
+                if (!acc[keyValue]) {
+                    acc[keyValue] = [];
+                }
+                acc[keyValue].push(item.str);
+                return acc;
+            }, {});
+        }
+
+        function convertToCSV(groupedText) {
             var csv = "Column1,Column2,Column3\n"; // Modify based on actual columns
-            rows.forEach(function(row) {
-                var columns = row.split(/\s+/).join(",");
-                csv += columns + "\n";
+            Object.values(groupedText).forEach(row => {
+                csv += row.join(",") + "\n";
             });
             return csv;
         }
