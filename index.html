@@ -22,7 +22,7 @@
 </head>
 <body>
     <h1>PDF.js Example</h1>
-    <p>Version: 30</p>
+    <p>Version: 31</p>
     <div id="controls">
         <input type="file" id="file-input" accept="application/pdf"/>
         <button id="download-csv">Download CSV</button>
@@ -94,23 +94,8 @@
                     }
 
                     Promise.all(promises).then(function() {
-                        // Determine the most used X coordinates
-                        var xCounts = {};
-                        finalText.forEach(item => {
-                            if (!xCounts[item.x]) {
-                                xCounts[item.x] = 0;
-                            }
-                            xCounts[item.x]++;
-                        });
-
-                        var sortedX = Object.keys(xCounts).sort((a, b) => xCounts[b] - xCounts[a]);
-                        var mainColumns = sortedX.slice(0, 5); // Adjust the number of columns as needed
-
-                        // Group items by column
-                        var groupedItems = finalText.filter(item => mainColumns.includes(item.x.toString()));
-
-                        // Convert the grouped items to CSV format
-                        var csvContent = convertToCSV(groupedItems);
+                        // Convert the final text to CSV format
+                        var csvContent = convertToCSV(finalText);
                         document.getElementById('download-csv').onclick = function() {
                             downloadCSV(csvContent);
                         };
@@ -121,9 +106,9 @@
             fileReader.readAsArrayBuffer(file);
         });
 
-        function convertToCSV(items) {
+        function convertToCSV(textItems) {
             var csv = "Page,X,Y,Text\n"; // Add headers
-            items.forEach(item => {
+            textItems.forEach(item => {
                 csv += `${item.page},${item.x},${item.y},"${item.str}"\n`;
             });
             return csv;
@@ -133,8 +118,12 @@
             var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             var link = document.createElement("a");
             var url = URL.createObjectURL(blob);
+            var now = new Date();
+            var isoDate = now.toISOString();
+            var version = "31";
+            var filename = `output_v${version}_${isoDate}.csv`;
             link.setAttribute("href", url);
-            link.setAttribute("download", "output.csv");
+            link.setAttribute("download", filename);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
