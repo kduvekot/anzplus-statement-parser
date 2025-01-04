@@ -32,12 +32,12 @@
 <body>
     <h1>PDF.js Example</h1>
     <p id="version-display"></p>
+    <p id="debug-link">Show Debug Information</p>
     <div id="controls">
         <input type="file" id="file-input" accept="application/pdf"/>
         <button id="download-csv">Download CSV</button>
     </div>
     <canvas id="pdf-canvas"></canvas>
-    <p id="debug-link">Show Debug Information</p>
     <div id="debug-section">
         <h2>Top 10 X Coordinates (Rounded)</h2>
         <table id="coordinates-table" border="1">
@@ -53,7 +53,7 @@
         <pre id="raw-csv-output"></pre>
     </div>
     <script>
-        var version = "32";
+        var version = "33";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -71,6 +71,9 @@
                 pdfjsLib.getDocument({data: typedarray}).promise.then(function(pdf) {
                     var numPages = pdf.numPages;
                     var finalText = [];
+                    var transactionId = 1;
+                    var prevX = 0;
+                    var prevY = 0;
 
                     // Function to get text from each page
                     function getPageText(pageNum) {
@@ -102,14 +105,30 @@
                             // Extract text from the page
                             return page.getTextContent().then(function(textContent) {
                                 var textItems = textContent.items;
-                                var pageTexts = textItems.map(item => ({
-                                    str: item.str,
-                                    x: item.transform[4],
-                                    y: item.transform[5],
-                                    page: pageNum, // Add page number
-                                    roundedX: Math.floor(item.transform[4] / 20) * 20, // Rounded X coordinate
-                                    roundedY: Math.floor(item.transform[5] / 20) * 20  // Rounded Y coordinate
-                                }));
+                                var pageTexts = textItems.map((item, index) => {
+                                    var x = item.transform[4];
+                                    var y = item.transform[5];
+                                    var roundedX = Math.floor(x / 20) * 20;
+                                    var roundedY = Math.floor(y / 20) * 20;
+
+                                    // Determine if it's a new transaction
+                                    if ((x < prevX && y < prevY) || index === 0) {
+                                        transactionId++;
+                                    }
+
+                                    prevX = x;
+                                    prevY = y;
+
+                                    return {
+                                        str: item.str,
+                                        x: x,
+                                        y: y,
+                                        page: pageNum, // Add page number
+                                        roundedX: roundedX, // Rounded X coordinate
+                                        roundedY: roundedY, // Rounded Y coordinate
+                                        transactionId: transactionId
+                                    };
+                                });
                                 finalText.push(...pageTexts);
                                 return pageTexts;
                             });
@@ -142,15 +161,16 @@
             var debugSection = document.getElementById('debug-section');
             if (debugSection.style.display === 'none') {
                 debugSection.style.display = 'block';
+                window.scrollTo(0, document.body.scrollHeight);
             } else {
                 debugSection.style.display = 'none';
             }
         });
 
         function convertToCSV(textItems) {
-            var csv = "Page,X,Y,Text,RoundedX,RoundedY\n"; // Add headers
+            var csv = "Page,X,Y,Text,RoundedX,RoundedY,TransactionID\n"; // Add headers
             textItems.forEach(item => {
-                csv += `${item.page},${item.x},${item.y},"${item.str}",${item.roundedX},${item.roundedY}\n`;
+                csv += `${item.page},${item.x},${item.y},"${item.str}",${item.roundedX},${item.roundedY},${item.transactionId}\n`;
             });
             return csv;
         }
@@ -191,8 +211,18 @@
                 cellCount.textContent = xCounts[x];
             });
 
-            // Display raw CSV output
-            document.getElementById('raw-csv-output').textContent = csvContent;
+            // Display raw CSV output with transaction subheadings
+            var rawOutput = "";
+            var currentTransaction = -1;
+            textItems.forEach(item => {
+                if (item.transactionId !== currentTransaction) {
+                    currentTransaction = item.transactionId;
+                    rawOutput += `\nTransaction ${currentTransaction}:\n`;
+                }
+                rawOutput += `${item.page},${item.x},${item.y},"${item.str}",${item.roundedX},${item.roundedY},${item.transactionId}\n`;
+            });
+
+            document.getElementById('raw-csv-output').textContent = rawOutput;
         }
     </script>
 </body>
