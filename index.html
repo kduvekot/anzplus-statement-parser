@@ -9,17 +9,25 @@
         #pdf-canvas {
             border: 1px solid black;
             width: 100%;
+            max-width: 100%;
             height: auto;
-            max-height: 100vh; /* Max height to fit within the viewport height */
+        }
+        #controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
     <h1>PDF.js Example</h1>
     <p>Version: Commit df19e1b on 2025-01-04 14:27:43 UTC</p>
-    <input type="file" id="file-input" accept="application/pdf"/>
+    <div id="controls">
+        <input type="file" id="file-input" accept="application/pdf"/>
+        <button id="download-csv">Download CSV</button>
+    </div>
     <canvas id="pdf-canvas"></canvas>
-    <button id="download-csv">Download CSV</button>
     <script>
         document.getElementById('file-input').addEventListener('change', function(event) {
             var file = event.target.files[0];
@@ -40,22 +48,27 @@
                     // Function to get text from each page
                     function getPageText(pageNum) {
                         return pdf.getPage(pageNum).then(function(page) {
-                            var scale = 1.5;
+                            var scale = 1.0;
                             var viewport = page.getViewport({ scale: scale });
 
                             // Prepare canvas using PDF page dimensions
                             var canvas = document.getElementById('pdf-canvas');
                             var context = canvas.getContext('2d');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
 
-                            // Adjust canvas size to fit within the viewport
-                            var ratio = viewport.width / viewport.height;
-                            canvas.width = window.innerWidth * 0.9; // Adjust width to 90% of window width
-                            canvas.height = canvas.width / ratio;
+                            // Check if the canvas height exceeds the window height
+                            if (canvas.height > window.innerHeight) {
+                                scale = window.innerHeight / canvas.height;
+                                viewport = page.getViewport({ scale: scale });
+                                canvas.height = viewport.height;
+                                canvas.width = viewport.width;
+                            }
 
                             // Render PDF page into canvas context
                             var renderContext = {
                                 canvasContext: context,
-                                viewport: page.getViewport({ scale: canvas.width / viewport.width })
+                                viewport: viewport
                             };
                             page.render(renderContext);
 
