@@ -104,7 +104,7 @@
                         });
 
                         var sortedX = Object.keys(xCounts).sort((a, b) => xCounts[b] - xCounts[a]);
-                        var mainColumns = sortedX.slice(0, 3); // Adjust the number of columns as needed
+                        var mainColumns = sortedX.slice(0, 5); // Adjust the number of columns as needed
 
                         // Group items by column
                         var groupedItems = finalText.filter(item => mainColumns.includes(item.x.toString()));
