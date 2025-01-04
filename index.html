@@ -53,7 +53,7 @@
         <pre id="raw-csv-output"></pre>
     </div>
     <script>
-        var version = "33";
+        var version = "34";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -74,6 +74,7 @@
                     var transactionId = 1;
                     var prevX = 0;
                     var prevY = 0;
+                    var wordNumber = 1;
 
                     // Function to get text from each page
                     function getPageText(pageNum) {
@@ -119,6 +120,11 @@
                                     prevX = x;
                                     prevY = y;
 
+                                    // Skip empty words
+                                    if (item.str.trim() === "") {
+                                        return null;
+                                    }
+
                                     return {
                                         str: item.str,
                                         x: x,
@@ -126,9 +132,10 @@
                                         page: pageNum, // Add page number
                                         roundedX: roundedX, // Rounded X coordinate
                                         roundedY: roundedY, // Rounded Y coordinate
-                                        transactionId: transactionId
+                                        transactionId: transactionId,
+                                        wordNumber: wordNumber++
                                     };
-                                });
+                                }).filter(item => item !== null); // Filter out null values
                                 finalText.push(...pageTexts);
                                 return pageTexts;
                             });
@@ -168,9 +175,9 @@
         });
 
         function convertToCSV(textItems) {
-            var csv = "Page,X,Y,Text,RoundedX,RoundedY,TransactionID\n"; // Add headers
+            var csv = "Page,WordNumber,X,Y,Text,RoundedX,RoundedY,TransactionID\n"; // Add headers
             textItems.forEach(item => {
-                csv += `${item.page},${item.x},${item.y},"${item.str}",${item.roundedX},${item.roundedY},${item.transactionId}\n`;
+                csv += `${item.page},${item.wordNumber},${item.x},${item.y},"${item.str}",${item.roundedX},${item.roundedY},${item.transactionId}\n`;
             });
             return csv;
         }
@@ -214,12 +221,27 @@
             // Display raw CSV output with transaction subheadings
             var rawOutput = "";
             var currentTransaction = -1;
+            var uniqueRoundedXCoords = [];
             textItems.forEach(item => {
                 if (item.transactionId !== currentTransaction) {
                     currentTransaction = item.transactionId;
                     rawOutput += `\nTransaction ${currentTransaction}:\n`;
+                    uniqueRoundedXCoords = [];
                 }
-                rawOutput += `${item.page},${item.x},${item.y},"${item.str}",${item.roundedX},${item.roundedY},${item.transactionId}\n`;
+
+                if (!uniqueRoundedXCoords.includes(item.roundedX)) {
+                    uniqueRoundedXCoords.push(item.roundedX);
+                }
+
+                rawOutput += `${item.page},${item.wordNumber},${item.x},${item.y},"${item.str}",${item.roundedX},${item.roundedY},${item.transactionId}\n`;
+            });
+
+            rawOutput += `\nUnique Rounded X Coordinates per Transaction:\n`;
+            textItems.forEach(item => {
+                if (item.transactionId !== currentTransaction) {
+                    currentTransaction = item.transactionId;
+                    rawOutput += `Transaction ${currentTransaction}: ${uniqueRoundedXCoords.join(", ")}\n`;
+                }
             });
 
             document.getElementById('raw-csv-output').textContent = rawOutput;
