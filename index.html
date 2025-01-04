@@ -22,7 +22,7 @@
 </head>
 <body>
     <h1>PDF.js Example</h1>
-    <p>Version: Commit df19e1b on 2025-01-04 14:36:20 UTC</p>
+    <p>Version: Commit df19e1b on 2025-01-04 14:39:17 UTC</p>
     <div id="controls">
         <input type="file" id="file-input" accept="application/pdf"/>
         <button id="download-csv">Download CSV</button>
@@ -78,7 +78,8 @@
                                 var pageTexts = textItems.map(item => ({
                                     str: item.str,
                                     x: item.transform[4],
-                                    y: item.transform[5]
+                                    y: item.transform[5],
+                                    page: pageNum // Add page number
                                 }));
                                 finalText.push(...pageTexts);
                                 return pageTexts;
@@ -93,12 +94,8 @@
                     }
 
                     Promise.all(promises).then(function() {
-                        // Group text items based on their y-coordinate (assuming rows)
-                        finalText.sort((a, b) => a.y - b.y);
-                        var groupedText = groupBy(finalText, item => item.y);
-                        
-                        // Convert the grouped text to CSV format
-                        var csvContent = convertToCSV(groupedText);
+                        // Convert the final text to CSV format
+                        var csvContent = convertToCSV(finalText);
                         document.getElementById('download-csv').onclick = function() {
                             downloadCSV(csvContent);
                         };
@@ -109,21 +106,10 @@
             fileReader.readAsArrayBuffer(file);
         });
 
-        function groupBy(arr, key) {
-            return arr.reduce((acc, item) => {
-                const keyValue = key(item);
-                if (!acc[keyValue]) {
-                    acc[keyValue] = [];
-                }
-                acc[keyValue].push(item.str);
-                return acc;
-            }, {});
-        }
-
-        function convertToCSV(groupedText) {
-            var csv = "Column1,Column2,Column3\n"; // Modify based on actual columns
-            Object.values(groupedText).forEach(row => {
-                csv += row.join(",") + "\n";
+        function convertToCSV(textItems) {
+            var csv = "Page,X,Y,Text\n"; // Add headers
+            textItems.forEach(item => {
+                csv += `${item.page},${item.x},${item.y},"${item.str}"\n`;
             });
             return csv;
         }
