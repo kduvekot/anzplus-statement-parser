@@ -57,7 +57,7 @@
         <pre id="cleaned-transactions-output"></pre>
     </div>
     <script>
-        var version = "39";
+        var version = "40";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -365,8 +365,9 @@
         }
 
         function calculateThreshold(distances) {
-            var sum = distances.reduce((a, b) => a + b, 0);
-            return sum / distances.length;
+            distances.sort((a, b) => a - b);
+            var middle = Math.floor(distances.length / 2);
+            return distances[middle];
         }
     </script>
 </body>
