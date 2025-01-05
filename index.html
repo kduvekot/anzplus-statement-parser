@@ -57,7 +57,7 @@
         <pre id="cleaned-transactions-output"></pre>
     </div>
     <script>
-        var version = "47";
+        var version = "48";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -197,7 +197,7 @@
                         cleanedTransactions = extractValidTransactions(finalText);
 
                         // Convert the final text to CSV format
-                        var csvContent = convertToCSV(finalText);
+                        var csvContent = convertToCSV(cleanedTransactions);
                         document.getElementById('download-csv').onclick = function() {
                             downloadCSV(csvContent);
                         };
@@ -229,10 +229,14 @@
             return null;
         }
 
-        function convertToCSV(textItems) {
-            var csv = "Page,WordNumber,X,Y,Text,Value,RoundedX,RoundedY,TransactionID\n"; // Add headers
-            textItems.forEach(item => {
-                csv += `${item.page},${item.wordNumber},${item.x},${item.y},"${item.str}",${item.value},${item.roundedX},${item.roundedY},${item.transactionId}\n`;
+        function convertToCSV(transactions) {
+            var csv = "Date,Description,TransactionAmount,Debit/Credit,CreditAmount,DebitAmount,BalanceAmount,TransactionID\n"; // Add headers
+            transactions.sort((a, b) => b.transactionId - a.transactionId); // Sort by TransactionID in reverse order
+            transactions.forEach(transaction => {
+                var creditAmount = transaction.details.find(detail => detail.type === "Credit")?.value || "";
+                var debitAmount = transaction.details.find(detail => detail.type === "Debit")?.value || "";
+                var balanceAmount = transaction.amounts[1]?.value || "";
+                csv += `${transaction.dateWord},${transaction.descriptionWord},${transaction.amounts[0]?.value},${transaction.details.find(detail => detail.value !== null)?.type},${creditAmount},${debitAmount},${balanceAmount},${transaction.transactionId}\n`;
             });
             return csv;
         }
