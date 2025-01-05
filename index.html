@@ -57,7 +57,7 @@
         <pre id="cleaned-transactions-output"></pre>
     </div>
     <script>
-        var version = "37";
+        var version = "38";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -291,7 +291,7 @@
             cleanedTransactions.forEach(transaction => {
                 cleanedOutput += `Transaction ${transaction.transactionId} (${transaction.dateWord} ${transaction.descriptionWord}):\n`;
                 transaction.details.forEach(detail => {
-                    cleanedOutput += `Page: ${detail.page}, X: ${detail.x}, Y: ${detail.y}, Text: "${detail.str}", Value: ${detail.value}\n`;
+                    cleanedOutput += `Page: ${detail.page}, X: ${detail.x}, Y: ${detail.y}, Text: "${detail.str}", Value: ${detail.value}, Type: ${detail.type}\n`;
                 });
                 cleanedOutput += "\n";
             });
@@ -329,10 +329,18 @@
                     currentTransaction.descriptionWord = item.str;
                     currentTransaction.details.push(item);
                 } else if (currentTransaction && item.value !== null) {
-                    currentTransaction.amounts.push(item.value);
+                    currentTransaction.amounts.push({
+                        value: item.value,
+                        x: item.x
+                    });
                     currentTransaction.details.push(item);
 
                     if (currentTransaction.amounts.length === 2) {
+                        var distance = Math.abs(currentTransaction.amounts[0].x - currentTransaction.amounts[1].x);
+                        var type = distance < 50 ? "Debit" : "Credit";
+                        currentTransaction.details.forEach(detail => {
+                            detail.type = type;
+                        });
                         validTransactions.push(currentTransaction);
                         currentTransaction = null;
                     }
