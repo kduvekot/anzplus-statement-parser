@@ -57,7 +57,7 @@
         <pre id="cleaned-transactions-output"></pre>
     </div>
     <script>
-        var version = "44";
+        var version = "45";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -347,7 +347,8 @@
             }
 
             validTransactions.forEach(transaction => {
-                var type = transaction.amounts[0].value > 0 ? "Credit" : "Debit";
+                var threshold = 120;
+                var type = transaction.amounts[0].x < threshold ? "Debit" : "Credit";
                 transaction.details[transaction.details.findIndex(detail => detail.value !== null)].type = type;
             });
 
