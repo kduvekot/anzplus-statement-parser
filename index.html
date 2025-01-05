@@ -57,7 +57,7 @@
         <pre id="cleaned-transactions-output"></pre>
     </div>
     <script>
-        var version = "50";
+        var version = "51";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -222,7 +222,7 @@
         });
 
         function convertAmount(str) {
-            var amountRegex = /^\$(\d{1,3}(,\d{3})*\.\d{2})$/;
+            var amountRegex = /^\$(\d{1,3}(,\\d{3})*\\.\\d{2})$/;
             if (amountRegex.test(str)) {
                 return parseFloat(str.replace(/[$,]/g, ''));
             }
@@ -236,8 +236,8 @@
                 var creditAmount = transaction.details.find(detail => detail.type === "Credit")?.value || "";
                 var debitAmount = transaction.details.find(detail => detail.type === "Debit")?.value || "";
                 var balanceAmount = transaction.amounts[1]?.value || "";
-                var transactionAmount = transaction.amounts[0]?.value !== undefined ? transaction.amounts[0].value.toFixed(2) : "";
-                csv += `${transaction.dateWord},${transaction.descriptionWord},${transactionAmount},${transaction.details.find(detail => detail.value !== null)?.type},${creditAmount ? parseFloat(creditAmount).toFixed(2) : ""},${debitAmount ? parseFloat(debitAmount).toFixed(2) : ""},${balanceAmount ? parseFloat(balanceAmount).toFixed(2) : ""},${transaction.transactionId}\n`;
+                var transactionAmount = transaction.amounts[0]?.value !== undefined ? transaction.amounts[0].value : "";
+                csv += `${transaction.dateWord},${transaction.descriptionWord},${transactionAmount},${transaction.details.find(detail => detail.value !== null)?.type},${creditAmount},${debitAmount},${balanceAmount},${transaction.transactionId}\n`;
             });
             return csv;
         }
