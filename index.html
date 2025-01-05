@@ -55,11 +55,9 @@
         <pre id="transaction-sequences-output"></pre>
         <h2>Cleaned Transactions</h2>
         <pre id="cleaned-transactions-output"></pre>
-        <h2>Sorted List of Transaction Distances</h2>
-        <pre id="sorted-distances-output"></pre>
     </div>
     <script>
-        var version = "42";
+        var version = "43";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -293,7 +291,7 @@
             cleanedTransactions.forEach(transaction => {
                 cleanedOutput += `Transaction ${transaction.transactionId} (${transaction.dateWord} ${transaction.descriptionWord}):\n`;
                 transaction.details.forEach(detail => {
-                    cleanedOutput += `Page: ${detail.page}, X: ${detail.x}, Y: ${detail.y}, Text: "${detail.str}", Value: ${detail.value}, Type: ${detail.type}, Distance: ${detail.distance}\n`;
+                    cleanedOutput += `Page: ${detail.page}, X: ${detail.x}, Y: ${detail.y}, Text: "${detail.str}", Value: ${detail.value}, Type: ${detail.type}\n`;
                 });
                 cleanedOutput += "\n";
             });
@@ -308,22 +306,12 @@
             });
 
             document.getElementById('transaction-sequences-output').textContent = sequenceOutput;
-
-            // === Debugging: Sorted List of Transaction Distances ===
-            var distances = cleanedTransactions.map(transaction => ({
-                distance: transaction.details[0].distance,
-                transactionId: transaction.transactionId
-            }));
-            distances.sort((a, b) => b.distance - a.distance);
-            var sortedDistancesOutput = distances.map(d => `Distance: ${d.distance}, Transaction ID: ${d.transactionId}`).join('\n');
-            document.getElementById('sorted-distances-output').textContent = sortedDistancesOutput;
         }
 
         function extractValidTransactions(textItems) {
             var validTransactions = [];
             var dateRegex = /^(0[1-9]|[12][0-9]|3[01]) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/;
             var currentTransaction = null;
-            var distances = [];
 
             textItems.forEach(item => {
                 if (dateRegex.test(item.str)) {
@@ -348,11 +336,6 @@
                     currentTransaction.details.push(item);
 
                     if (currentTransaction.amounts.length === 2) {
-                        var distance = Math.abs(currentTransaction.amounts[0].x - currentTransaction.amounts[1].x);
-                        distances.push(distance);
-                        currentTransaction.details.forEach(detail => {
-                            detail.distance = distance;
-                        });
                         validTransactions.push(currentTransaction);
                         currentTransaction = null;
                     }
@@ -363,22 +346,12 @@
                 validTransactions.push(currentTransaction);
             }
 
-            var threshold = calculateThreshold(distances);
-
             validTransactions.forEach(transaction => {
-                var type = transaction.details[0].distance < threshold ? "Debit" : "Credit";
-                transaction.details.forEach(detail => {
-                    detail.type = type;
-                });
+                var type = transaction.amounts[0].value > 0 ? "Credit" : "Debit";
+                transaction.details[0].type = type;
             });
 
             return validTransactions;
-        }
-
-        function calculateThreshold(distances) {
-            distances.sort((a, b) => a - b);
-            var middle = Math.floor(distances.length / 2);
-            return distances[middle];
         }
     </script>
 </body>
