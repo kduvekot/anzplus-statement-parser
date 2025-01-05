@@ -53,6 +53,8 @@
         <pre id="raw-csv-output"></pre>
         <h2>Transaction X Coordinate Sequences</h2>
         <pre id="transaction-sequences-output"></pre>
+        <h2>Cleaned Transactions</h2>
+        <pre id="cleaned-transactions-output"></pre>
     </div>
     <script>
         var version = "37";
@@ -79,6 +81,7 @@
                     var wordNumber = 1;
                     var transactionSequences = {};
                     var currentTransactionSequence = [];
+                    var cleanedTransactions = [];
 
                     // Function to get text from each page
                     function getPageText(pageNum) {
@@ -190,6 +193,9 @@
                             transactionSequences[sequenceKey]++;
                         }
 
+                        // Filter and extract valid transactions
+                        cleanedTransactions = extractValidTransactions(finalText);
+
                         // Convert the final text to CSV format
                         var csvContent = convertToCSV(finalText);
                         document.getElementById('download-csv').onclick = function() {
@@ -197,7 +203,7 @@
                         };
 
                         // Display debug information
-                        displayDebugInformation(finalText, csvContent, transactionSequences);
+                        displayDebugInformation(finalText, csvContent, transactionSequences, cleanedTransactions);
                     });
                 });
             };
@@ -246,7 +252,7 @@
             document.body.removeChild(link);
         }
 
-        function displayDebugInformation(textItems, csvContent, transactionSequences) {
+        function displayDebugInformation(textItems, csvContent, transactionSequences, cleanedTransactions) {
             // Calculate top 10 rounded X coordinates
             var xCounts = {};
             textItems.forEach(item => {
@@ -280,6 +286,18 @@
 
             document.getElementById('raw-csv-output').textContent = rawOutput;
 
+            // Display cleaned transactions
+            var cleanedOutput = "";
+            cleanedTransactions.forEach(transaction => {
+                cleanedOutput += `Transaction ${transaction.transactionId} (${transaction.dateWord} ${transaction.descriptionWord}):\n`;
+                transaction.details.forEach(detail => {
+                    cleanedOutput += `Page: ${detail.page}, X: ${detail.x}, Y: ${detail.y}, Text: "${detail.str}", Value: ${detail.value}\n`;
+                });
+                cleanedOutput += "\n";
+            });
+
+            document.getElementById('cleaned-transactions-output').textContent = cleanedOutput;
+
             // Display transaction sequences occurrences
             var sequenceOutput = "";
             var sortedSequences = Object.keys(transactionSequences).sort((a, b) => transactionSequences[b] - transactionSequences[a]);
@@ -288,6 +306,44 @@
             });
 
             document.getElementById('transaction-sequences-output').textContent = sequenceOutput;
+        }
+
+        function extractValidTransactions(textItems) {
+            var validTransactions = [];
+            var dateRegex = /^(0[1-9]|[12][0-9]|3[01]) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/;
+            var currentTransaction = null;
+
+            textItems.forEach(item => {
+                if (dateRegex.test(item.str)) {
+                    if (currentTransaction && currentTransaction.details.length >= 3) {
+                        validTransactions.push(currentTransaction);
+                    }
+                    currentTransaction = {
+                        transactionId: item.transactionId,
+                        dateWord: item.str,
+                        descriptionWord: null,
+                        amounts: [],
+                        details: [item]
+                    };
+                } else if (currentTransaction && !currentTransaction.descriptionWord) {
+                    currentTransaction.descriptionWord = item.str;
+                    currentTransaction.details.push(item);
+                } else if (currentTransaction && item.value !== null) {
+                    currentTransaction.amounts.push(item.value);
+                    currentTransaction.details.push(item);
+
+                    if (currentTransaction.amounts.length === 2) {
+                        validTransactions.push(currentTransaction);
+                        currentTransaction = null;
+                    }
+                }
+            });
+
+            if (currentTransaction && currentTransaction.details.length >= 3) {
+                validTransactions.push(currentTransaction);
+            }
+
+            return validTransactions;
         }
     </script>
 </body>
