@@ -55,7 +55,7 @@
         <pre id="transaction-sequences-output"></pre>
     </div>
     <script>
-        var version = "35";
+        var version = "36";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -110,7 +110,10 @@
                             // Extract text from the page
                             return page.getTextContent().then(function(textContent) {
                                 var textItems = textContent.items;
-                                var pageTexts = textItems.map((item, index) => {
+                                var pageTexts = [];
+                                var previousItem = null;
+
+                                textItems.forEach((item, index) => {
                                     var x = item.transform[4];
                                     var y = item.transform[5];
                                     var roundedX = Math.floor(x / 20) * 20;
@@ -135,22 +138,34 @@
 
                                     // Skip empty words
                                     if (item.str.trim() === "") {
-                                        return null;
+                                        return;
                                     }
 
                                     currentTransactionSequence.push(roundedX);
 
-                                    return {
-                                        str: item.str,
-                                        x: x,
-                                        y: y,
-                                        page: pageNum,
-                                        roundedX: roundedX,
-                                        roundedY: roundedY,
-                                        transactionId: transactionId,
-                                        wordNumber: wordNumber++
-                                    };
-                                }).filter(item => item !== null); // Filter out null values
+                                    if (previousItem && previousItem.x === x && previousItem.y !== y) {
+                                        previousItem.str += " " + item.str;
+                                    } else {
+                                        if (previousItem) {
+                                            pageTexts.push(previousItem);
+                                        }
+                                        previousItem = {
+                                            str: item.str,
+                                            x: x,
+                                            y: y,
+                                            page: pageNum,
+                                            roundedX: roundedX,
+                                            roundedY: roundedY,
+                                            transactionId: transactionId,
+                                            wordNumber: wordNumber++
+                                        };
+                                    }
+                                });
+
+                                if (previousItem) {
+                                    pageTexts.push(previousItem);
+                                }
+
                                 finalText.push(...pageTexts);
                                 return pageTexts;
                             });
