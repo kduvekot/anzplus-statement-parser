@@ -27,9 +27,6 @@
             color: blue;
             text-decoration: underline;
         }
-        #histogram {
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
@@ -58,8 +55,8 @@
         <pre id="transaction-sequences-output"></pre>
         <h2>Cleaned Transactions</h2>
         <pre id="cleaned-transactions-output"></pre>
-        <h2>Histogram of Transaction Distances</h2>
-        <canvas id="histogram"></canvas>
+        <h2>Sorted List of Transaction Distances</h2>
+        <pre id="sorted-distances-output"></pre>
     </div>
     <script>
         var version = "41";
@@ -312,33 +309,14 @@
 
             document.getElementById('transaction-sequences-output').textContent = sequenceOutput;
 
-            // === Debugging: Histogram of Transaction Distances ===
-            var histogramCanvas = document.getElementById('histogram');
-            var ctx = histogramCanvas.getContext('2d');
-            var histogramData = cleanedTransactions.map(transaction => transaction.details[0].distance);
-            var histogram = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: Array.from(new Set(histogramData)).sort((a, b) => a - b),
-                    datasets: [{
-                        label: 'Transaction Distances',
-                        data: histogramData.reduce((acc, distance) => {
-                            acc[distance] = (acc[distance] || 0) + 1;
-                            return acc;
-                        }, {}),
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
+            // === Debugging: Sorted List of Transaction Distances ===
+            var distances = cleanedTransactions.map(transaction => ({
+                distance: transaction.details[0].distance,
+                transactionId: transaction.transactionId
+            }));
+            distances.sort((a, b) => b.distance - a.distance);
+            var sortedDistancesOutput = distances.map(d => `Distance: ${d.distance}, Transaction ID: ${d.transactionId}`).join('\n');
+            document.getElementById('sorted-distances-output').textContent = sortedDistancesOutput;
         }
 
         function extractValidTransactions(textItems) {
@@ -403,6 +381,5 @@
             return distances[middle];
         }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>
