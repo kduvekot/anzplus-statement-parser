@@ -57,7 +57,7 @@
         <pre id="cleaned-transactions-output"></pre>
     </div>
     <script>
-        var version = "45";
+        var version = "46";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -336,6 +336,10 @@
                     currentTransaction.details.push(item);
 
                     if (currentTransaction.amounts.length === 2) {
+                        // Calculate the distance between the first and second amount
+                        var distance = Math.abs(currentTransaction.amounts[0].x - currentTransaction.amounts[1].x);
+                        var type = distance < 120 ? "Debit" : "Credit";
+                        transaction.details[transaction.details.findIndex(detail => detail.value !== null)].type = type;
                         validTransactions.push(currentTransaction);
                         currentTransaction = null;
                     }
@@ -345,12 +349,6 @@
             if (currentTransaction && currentTransaction.details.length >= 3) {
                 validTransactions.push(currentTransaction);
             }
-
-            validTransactions.forEach(transaction => {
-                var threshold = 120;
-                var type = transaction.amounts[0].x < threshold ? "Debit" : "Credit";
-                transaction.details[transaction.details.findIndex(detail => detail.value !== null)].type = type;
-            });
 
             return validTransactions;
         }
