@@ -57,7 +57,7 @@
         <pre id="cleaned-transactions-output"></pre>
     </div>
     <script>
-        var version = "46";
+        var version = "47";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -339,7 +339,7 @@
                         // Calculate the distance between the first and second amount
                         var distance = Math.abs(currentTransaction.amounts[0].x - currentTransaction.amounts[1].x);
                         var type = distance < 120 ? "Debit" : "Credit";
-                        transaction.details[transaction.details.findIndex(detail => detail.value !== null)].type = type;
+                        currentTransaction.details[currentTransaction.details.findIndex(detail => detail.value !== null)].type = type;
                         validTransactions.push(currentTransaction);
                         currentTransaction = null;
                     }
