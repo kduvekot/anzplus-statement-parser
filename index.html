@@ -57,7 +57,7 @@
         <pre id="cleaned-transactions-output"></pre>
     </div>
     <script>
-        var version = "38";
+        var version = "39";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -312,6 +312,7 @@
             var validTransactions = [];
             var dateRegex = /^(0[1-9]|[12][0-9]|3[01]) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/;
             var currentTransaction = null;
+            var distances = [];
 
             textItems.forEach(item => {
                 if (dateRegex.test(item.str)) {
@@ -337,9 +338,9 @@
 
                     if (currentTransaction.amounts.length === 2) {
                         var distance = Math.abs(currentTransaction.amounts[0].x - currentTransaction.amounts[1].x);
-                        var type = distance < 50 ? "Debit" : "Credit";
+                        distances.push(distance);
                         currentTransaction.details.forEach(detail => {
-                            detail.type = type;
+                            detail.distance = distance;
                         });
                         validTransactions.push(currentTransaction);
                         currentTransaction = null;
@@ -351,7 +352,21 @@
                 validTransactions.push(currentTransaction);
             }
 
+            var threshold = calculateThreshold(distances);
+
+            validTransactions.forEach(transaction => {
+                var type = transaction.details[0].distance < threshold ? "Debit" : "Credit";
+                transaction.details.forEach(detail => {
+                    detail.type = type;
+                });
+            });
+
             return validTransactions;
+        }
+
+        function calculateThreshold(distances) {
+            var sum = distances.reduce((a, b) => a + b, 0);
+            return sum / distances.length;
         }
     </script>
 </body>
