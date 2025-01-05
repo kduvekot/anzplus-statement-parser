@@ -55,7 +55,7 @@
         <pre id="transaction-sequences-output"></pre>
     </div>
     <script>
-        var version = "36";
+        var version = "37";
         document.getElementById('version-display').textContent = "Version: " + version;
 
         document.getElementById('file-input').addEventListener('change', function(event) {
@@ -157,7 +157,8 @@
                                             roundedX: roundedX,
                                             roundedY: roundedY,
                                             transactionId: transactionId,
-                                            wordNumber: wordNumber++
+                                            wordNumber: wordNumber++,
+                                            value: convertAmount(item.str)
                                         };
                                     }
                                 });
@@ -214,10 +215,18 @@
             }
         });
 
+        function convertAmount(str) {
+            var amountRegex = /^\$(\d{1,3}(,\d{3})*\.\d{2})$/;
+            if (amountRegex.test(str)) {
+                return parseFloat(str.replace(/[$,]/g, ''));
+            }
+            return null;
+        }
+
         function convertToCSV(textItems) {
-            var csv = "Page,WordNumber,X,Y,Text,RoundedX,RoundedY,TransactionID\n"; // Add headers
+            var csv = "Page,WordNumber,X,Y,Text,Value,RoundedX,RoundedY,TransactionID\n"; // Add headers
             textItems.forEach(item => {
-                csv += `${item.page},${item.wordNumber},${item.x},${item.y},"${item.str}",${item.roundedX},${item.roundedY},${item.transactionId}\n`;
+                csv += `${item.page},${item.wordNumber},${item.x},${item.y},"${item.str}",${item.value},${item.roundedX},${item.roundedY},${item.transactionId}\n`;
             });
             return csv;
         }
@@ -266,7 +275,7 @@
                     currentTransaction = item.transactionId;
                     rawOutput += `\nTransaction ${currentTransaction}:\n`;
                 }
-                rawOutput += `${item.page},${item.wordNumber},${item.x},${item.y},"${item.str}",${item.roundedX},${item.roundedY},${item.transactionId}\n`;
+                rawOutput += `${item.page},${item.wordNumber},${item.x},${item.y},"${item.str}",${item.value},${item.roundedX},${item.roundedY},${item.transactionId}\n`;
             });
 
             document.getElementById('raw-csv-output').textContent = rawOutput;
